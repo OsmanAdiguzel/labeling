@@ -1,4 +1,6 @@
 
 The method used for better learnings by ML systems.
+
 The period of analysis is daily. The period may enlarge with your preferences after a argument changes from triple_barrier_method.py > triple_barrier_method() > relativedelta() > days arguments to weeks, monthts etc.
 
+First graphics is shows all price data with TBM analysis, while other one shows last 100 price data.
