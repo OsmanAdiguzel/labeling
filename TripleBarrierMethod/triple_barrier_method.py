@@ -45,7 +45,7 @@ def define_upandlow(close, df_):
     return upper, lower
     
 
-def triple_barrier_method(close, events, upper, lower, 
+def triple_barrier_method(close, events, upper, lower, barriers = [1,1,1],
                           hlen=25, plotting=False, record=False):
     dfo_ = close.to_frame(name="close")
     hlenght = relativedelta(days=hlen)
@@ -64,19 +64,22 @@ def triple_barrier_method(close, events, upper, lower,
             line_crossed = False
             if (dfo_.iloc[i-1]["close"] < dfo_.iloc[i-1]["upper"]) & (
                                     dfo_.iloc[i]["close"] > dfo_.iloc[i]["upper"]):
+                if barrier[0] == 1:
                 dfo_.at[dfo_.index[i],"output"] = 1
                 line_crossed = True
                 sign_at = dfo_.iloc[i]["event"]
             elif (dfo_.iloc[i-1]["close"] > dfo_.iloc[i-1]["lower"]) & (
                                     dfo_.iloc[i]["close"] < dfo_.iloc[i]["lower"]):
-                dfo_.at[dfo_.index[i],"output"] = -1
-                line_crossed = True
-                sign_at = dfo_.iloc[i]["event"]
+                if barrier[1] == 1:
+                    dfo_.at[dfo_.index[i],"output"] = -1
+                    line_crossed = True
+                    sign_at = dfo_.iloc[i]["event"]
             elif (line_crossed == False) & (dfo_.index[i] - relativedelta(
                                         days=hlen) == dfo_.iloc[i]["event"]):
-                dfo_.at[dfo_.index[i],"output"] = 1
-                line_crossed = True
-                sign_at = dfo_.iloc[i]["event"]
+                if barrier[2] == 1:
+                    dfo_.at[dfo_.index[i],"output"] = 1
+                    line_crossed = True
+                    sign_at = dfo_.iloc[i]["event"]
             else:
                 if dfo_.iloc[i]["upper"] > 0:
                     dfo_.at[dfo_.index[i],"output"] = 0
