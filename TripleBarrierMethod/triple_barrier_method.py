@@ -39,21 +39,14 @@ def define_upandlow(close, df_):
     df_["close"] = close
     df_["mean"] = df_.close.rolling(24,min_periods=1).mean().bfill()
     df_["std"] = df_.close.rolling(24,min_periods=1).std().bfill()
-    df_ = df_.fillna(0)
-    
-    for i,r in df_.iterrows():
-        if r.event == 0:
-            df_.at[i,"event"] = np.nan
-            df_.at[i,"mean"] = np.nan
-            df_.at[i,"std"] = np.nan
-            df_.at[i,"close"] = np.nan
+    df_.dropna(inplace=True)
     upper = df_["close"] + df_["std"]
     lower = df_["close"] - df_["std"]
     return upper, lower
     
 
 def triple_barrier_method(close, events, upper, lower, 
-                          hlen=25, plotting=False,record=False):
+                          hlen=25, plotting=False, record=False):
     dfo_ = close.to_frame(name="close")
     hlenght = relativedelta(days=hlen)
     dfo_["event"] = events
@@ -68,18 +61,27 @@ def triple_barrier_method(close, events, upper, lower,
     sign_at = 0
     for i in range(1,len(dfo_)):
         if sign_at != dfo_.iloc[i]["event"]:
+            line_crossed = False
             if (dfo_.iloc[i-1]["close"] < dfo_.iloc[i-1]["upper"]) & (
                                     dfo_.iloc[i]["close"] > dfo_.iloc[i]["upper"]):
                 dfo_.at[dfo_.index[i],"output"] = 1
+                line_crossed = True
                 sign_at = dfo_.iloc[i]["event"]
             elif (dfo_.iloc[i-1]["close"] > dfo_.iloc[i-1]["lower"]) & (
                                     dfo_.iloc[i]["close"] < dfo_.iloc[i]["lower"]):
                 dfo_.at[dfo_.index[i],"output"] = -1
+                line_crossed = True
+                sign_at = dfo_.iloc[i]["event"]
+            elif (line_crossed == False) & (dfo_.index[i] - relativedelta(
+                                        days=hlen) == dfo_.iloc[i]["event"]):
+                dfo_.at[dfo_.index[i],"output"] = 1
+                line_crossed = True
                 sign_at = dfo_.iloc[i]["event"]
             else:
                 if dfo_.iloc[i]["upper"] > 0:
                     dfo_.at[dfo_.index[i],"output"] = 0
-                
+                    
+                    
     dfg_ = dfg_.merge(dfo_["output"],right_index=True, left_index=True)
     dfg_ = dfg_.iloc[-100:]
     if plotting == True:
@@ -103,6 +105,8 @@ def triple_barrier_method(close, events, upper, lower,
                 mpl.plot(i,r["upper"]*1.03, marker="v", color="green")
             if r["output"] == -1:
                 mpl.plot(i,r["lower"]*0.97, marker="^", color="red")
+            #if r["output"] == 999:
+            #    mpl.plot(i,r["upper"]*1.1, marker=".", color="blue")
         t = dt.datetime.today()
         if record == True:
             mpl.savefig(f"graphs/{t.year}{t.month}{t.day}{t.hour}{t.minute}_3BM.png")
@@ -111,8 +115,8 @@ def triple_barrier_method(close, events, upper, lower,
 if __name__ == "__main__":
     df = pd.read_csv("cleared_price_daily.csv", index_col="datetime")
     df.index = pd.to_datetime(df.index)
-    close = df.electricity
-    event_dates = getTEvents(close.pct_change().dropna(),0.09)
+    close = df.basic_materials
+    event_dates = getTEvents(close.pct_change().dropna(),0.1)
     events_ = event_dates_to_frame(close,event_dates)
     upper,lower = define_upandlow(close, events_)
     events_ = event_dates_to_frame(close,event_dates)
